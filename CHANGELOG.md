@@ -1,3 +1,18 @@
+# v1.2.0
+## 11/23/2026
+1. [](#new)
+    * Grav 2.0 support (requires Grav 2.0+ and PHP 8.3+), `compatibility: grav: ['2.0']`
+2. [](#improved)
+    * Twig 3: the date translation extension uses the namespaced Twig classes
+    * the `onAdminSave` handler is subscribed unconditionally, so the geocoding and the iCalendar import also work with Admin 2.0 (API plugin), where `isAdmin()` is not yet true when plugins are initialized
+    * admin/API requests are skipped when building the virtual event pages
+    * PHP 8.2+: removed `${var}` string interpolation, `key_exists()`, passing `null` to `setTimezone()` and `str_contains()` on a possibly missing value
+    * `Page` type hints replaced with `PageInterface` (Flex pages)
+    * Carbon date differences are cast to positive integers, so they behave the same on Carbon 2 and 3
+    * the `year` and `month` URL params of the calendar are validated
+    * the geocoding no longer emits warnings when the request fails
+    * composer: dropped atoum and the outdated lock file, require Carbon 2.72+ and ics-parser 3.3+
+
 # v1.1.9
 ## 12/11/2023
 1. [](#new)

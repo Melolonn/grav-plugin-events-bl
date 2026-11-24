@@ -1,6 +1,11 @@
 # Events Plugin for Grav CMS
 
-This is an events plugin for [Grav CMS](http://getgrav.org)  1.1.5+.
+This is an events plugin for [Grav CMS](http://getgrav.org) 2.0+ (PHP 8.3+). It needs the
+[Datetools](https://github.com/kalebheitzman/grav-plugin-datetools) and
+[Translate Date](https://github.com/pikim/grav-plugin-translate-date) plugins, which have to be
+Grav 2.0 ready as well.
+
+Version 1.1.x of this plugin is the last one that supports Grav 1.x.
 
 Create single and repeating events using `event:` frontmatter on any page you choose. The Events Plugin provides templates for calendar, events, and event views and supports creating events via the [Admin plugin.](https://github.com/getgrav/grav-plugin-admin)
 

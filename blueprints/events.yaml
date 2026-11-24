@@ -1,4 +1,4 @@
-title: Events
+title: Événements
 '@extends':
     type: default
     context: blueprints://pages
@@ -10,20 +10,20 @@ form:
 
         events:
           type: tab
-          title: Events
+          title: Événements
           fields:
             header.content.items.@taxonomy.type:
               type: text
-              label: Taxonomy Type
+              label: Type de taxonomie
               default: event
             header.content.items.@taxonomy.event_repeat:
               type: text
-              label: Repeats On
+              label: Se répète le
               placeholder: "[M,T,W,R,F,S,U]"
             header.content.items.@taxonomy.event_freq:
               type: select
-              label: Frequency
-              help: How often should this event repeat?
+              label: Fréquence
+              help: À quelle fréquence cet événement doit-il se répéter ?
               default: none
               options:
                 'none': PLUGIN_EVENTS.EVENTS.FREQ_NONE
@@ -33,21 +33,21 @@ form:
                 'yearly': PLUGIN_EVENTS.EVENTS.FREQ_YEARLY
             header.content.dateRange.start:
               type: date
-              label: Start Date
+              label: Date de début
             header.content.dateRange.end:
               type: date
-              label: End Date
+              label: Date de fin
             header.content.order.by:
               type: text
-              label: Order By
+              label: Trier par
               default: date
             header.content.order.dir:
               type: text
-              label: Order Direction
+              label: Sens du tri
               default: asc
             header.content.limit:
               type: text
-              label: limit
+              label: Limite
               default: 10
             header.content.pagination:
               label: Pagination
@@ -55,7 +55,7 @@ form:
               highlight: 1
               default: 1
               options:
-                1: Enabled
-                0: Disabled
+                1: Activé
+                0: Désactivé
               validate:
                 type: bool

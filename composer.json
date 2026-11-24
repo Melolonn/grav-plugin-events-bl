@@ -3,10 +3,8 @@
 	"description": "Events plugin for Grav CMS",
 	"license": "MIT",
 	"require": {
-		"nesbot/carbon": "*",
-		"johngrogg/ics-parser": "*"
-	},
-	"require-dev": {
-	   "atoum/atoum": "~2.5"
+		"php": ">=8.3",
+		"nesbot/carbon": "^2.72",
+		"johngrogg/ics-parser": "^3.3"
 	}
 }

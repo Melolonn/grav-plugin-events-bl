@@ -59,7 +59,7 @@ class CalendarProcessor
 	 * @param  object $collection Grav Collection
 	 * @return array              Calendar variables for Twig
 	 */
-	public function calendarVars( \Grav\Common\Page\Collection $collection )
+	public function calendarVars( $collection )
 	{
 		// build a calendar array to use in twig
 		$calendar = array();
@@ -112,15 +112,20 @@ class CalendarProcessor
 	 */
 	public function twigVars($yearParam, $monthParam)
 	{
-		if ( $yearParam === false ) {
-			$yearParam = date('Y');
+		// the params come from the URL, so don't trust them (Uri::param()
+		// returns false or null when a param is missing, depending on version)
+		$year = ( $yearParam === false || $yearParam === null || $yearParam === '' ) ? (int) date('Y') : (int) $yearParam;
+		$month = ( $monthParam === false || $monthParam === null || $monthParam === '' ) ? (int) date('m') : (int) $monthParam;
+
+		if ( $year < 1 || $year > 9999 ) {
+			$year = (int) date('Y');
 		}
 
-		if ( $monthParam === false ) {
-			$monthParam = date('m');
+		if ( $month < 1 || $month > 12 ) {
+			$month = (int) date('m');
 		}
 
-		$monthYearString = "${yearParam}-${monthParam}-01";
+		$monthYearString = sprintf('%04d-%02d-01', $year, $month);
 		$carbonMonthYear = Carbon::parse($monthYearString);
 
 		// add vars for use in the calendar twig var
