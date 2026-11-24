@@ -20,6 +20,7 @@ require_once __DIR__.'/../vendor/autoload.php';
 // tools to use
 use Carbon\Carbon;
 use Grav\Common\Grav;
+use Grav\Common\Page\Interfaces\PageInterface;
 
 /**
  * Events Plugin Events Class
@@ -29,7 +30,7 @@ use Grav\Common\Grav;
  * virtual page is assigned a new route using a static & unique 6 character
  * token based off the existing page id and date.
  *
- * PHP version 5.6+
+ * PHP version 8.3+ (Grav 2.0)
  *
  * @category   Plugins
  * @package    Events
@@ -396,7 +397,7 @@ class EventsProcessor
 				$add = false;
 			}
 
-			$repeat = $header->event['repeat'];
+			$repeat = (string) ( $header->event['repeat'] ?? '' );
 			$dow = $carbonRules[$start->dayOfWeek];
 			if ( !str_contains( $repeat, $dow ) ) {
 				// don't add events that don't match the day of week
@@ -432,7 +433,7 @@ class EventsProcessor
 	 * @since  1.0.1 Initial Release
 	 * @return object        Grav Page
 	 */
-	private function clonePage( \Grav\Common\Page\Page $page, $dates, $rule = null )
+	private function clonePage( PageInterface $page, $dates, $rule = null )
 	{
 		// something went wrong in calculateNewDates, exit function
 		if ( is_null($dates['start']) || is_null($dates['end']) ) {
@@ -529,19 +530,19 @@ class EventsProcessor
 		
 		switch ( $freq ) {
 			case 'daily':
-				$count = $until->diffInDays($start);
+				$count = (int) abs($until->diffInDays($start));
 				break;
 
 			case 'weekly':
-				$count = $until->diffInWeeks($start);
+				$count = (int) abs($until->diffInWeeks($start));
 				break;
 
 			case 'monthly':
-				$count = $until->diffInMonths($start);
+				$count = (int) abs($until->diffInMonths($start));
 				break;
 
 			case 'yearly':
-				$count = $until->diffInYears($start);
+				$count = (int) abs($until->diffInYears($start));
 				break;
 
 			default:

@@ -51,8 +51,9 @@ class iCalendarProcessor
         // get a grav instance
         $grav = \Grav\Common\Grav::instance();
 
-        $this->config = $grav['config']->get('plugins.events');
-        $this->loc = $grav['locator']->base;
+        $this->config = (array) $grav['config']->get('plugins.events');
+        // GRAV_ROOT is the same as the locator's base, without relying on its internals
+        $this->loc = GRAV_ROOT;
     }
 
     /**
@@ -71,7 +72,7 @@ class iCalendarProcessor
     public function process( $mode )
     {
         // if path to icalendar folder isn't set, set it to a default
-        if ( ! key_exists('icalendar_folder', $this->config) ) {
+        if ( ! array_key_exists('icalendar_folder', $this->config) ) {
             $this->config['icalendar_folder'] = "/ical";
         }
 
@@ -89,17 +90,18 @@ class iCalendarProcessor
         }
 
         // if icalendars isn't set, set it to a default
-        if ( ! key_exists('icalendars', $this->config) ) {
+        if ( ! array_key_exists('icalendars', $this->config) ) {
             $this->config['icalendars'] = "";
         }
 
         // if icalendar_recurrence isn't set, set it to a default
-        if ( ! key_exists('icalendar_recurrence', $this->config) ) {
+        if ( ! array_key_exists('icalendar_recurrence', $this->config) ) {
             $this->config['icalendar_recurrence'] = 0;
         }
 
         // get the single iCalendar file(s) as array
-        $ical_files = explode("\n", $this->config['icalendars']);
+        // (trimmed and without empty lines, the parser doesn't like those)
+        $ical_files = array_values(array_filter(array_map('trim', explode("\n", (string) $this->config['icalendars']))));
 
         // open and parse iCalendar file(s)
         $ical = new ICal(
@@ -174,6 +176,7 @@ class iCalendarProcessor
         $file_names = array();
         $location = array();
         $summary = array();
+        $summ = '';
 
         // handle (multi-language) summary
         if ( isset($event->summary_array) ) {
@@ -426,7 +429,9 @@ class iCalendarProcessor
 */
                         case "UNTIL":
                             $time = Carbon::parse($rule[1]);
-                            $time->setTimezone($tz);
+                            if ( $tz !== null ) {
+                                $time->setTimezone($tz);
+                            }
                             $until = "    until: '" . $time->format('d-m-Y H:i') . "'".PHP_EOL;
                             break;
                     }

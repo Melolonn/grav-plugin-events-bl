@@ -27,13 +27,24 @@ fr:
     CALENDAR:
       TODAY: Aujourd'hui
       NO_EVENTS: Aucun événement n'est prévu pour aujourd'hui.
-      VIEW_ALL_EVENTS: Voir tous les événements.
+      VIEW_ALL_EVENTS: Voir tous les événements
     EVENTS:
-      UPCOMING_EVENTS: Évènements à venir
+      UPCOMING_EVENTS: Événements à venir
       BY_CATEGORY: Catégories d'événements
-      NO_EVENTS_TITLE: Aucunes événementsts
-      NO_EVENTS_CONTENT: Il n'y a aucun événement à venir dans la catégorie **%s**
+      NO_EVENTS_TITLE: Aucun événement
+      NO_EVENTS_CONTENT: Il n'y a aucun événement à venir dans la catégorie **%s**.
       MORE_INFORMATION: En savoir plus
+      NO_MORE_INFORMATION: Aucune information supplémentaire disponible
+      DOORS_OPEN: Ouverture des portes
+      FREQ_NONE: aucune
+      FREQ_DAILY: quotidienne
+      FREQ_WEEKLY: hebdomadaire
+      FREQ_MONTHLY: mensuelle
+      FREQ_YEARLY: annuelle
+    META:
+      REPEATS: Répétition
+      ON: le
+      UNTIL: jusqu'au
 
 de:
   PLUGIN_EVENTS:

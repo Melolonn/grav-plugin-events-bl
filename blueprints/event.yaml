@@ -1,4 +1,4 @@
-title: Event
+title: Événement
 '@extends':
     type: default
     context: blueprints://pages
@@ -10,52 +10,52 @@ form:
 
         event:
           type: tab
-          title: Event
+          title: Événement
           fields:
             header.event.status-section:
               type: section
-              title: Status
+              title: Statut
               underline: true
             header.event.status:
-              label: Status
+              label: Statut
               type: select
               default: ""
               options:
-                "": "None"
-                "scheduled": "scheduled"
-                "postponed": "postponed"
-                "cancelled": "cancelled"
-              title: Status
-              help: Possible values are scheduled, postponed, cancelled.
+                "": "Aucun"
+                "scheduled": "planifié"
+                "postponed": "reporté"
+                "cancelled": "annulé"
+              title: Statut
+              help: Les valeurs possibles sont planifié, reporté, annulé.
             header.event.dt-section:
               type: section
-              title: Date & Time
+              title: Date et heure
               underline: true
             header.event.doors_open:
               type: datetime
               label: PLUGIN_EVENTS.EVENTS.DOORS_OPEN
-              help: Use the date selector to enter a doors open date and time for this event.
+              help: Utilisez le sélecteur de date pour saisir la date et l'heure d'ouverture des portes de cet événement.
             header.event.start:
               type: datetime
-              label: Start
-              help: Use the date selector to enter a start date and time for this event.
+              label: Début
+              help: Utilisez le sélecteur de date pour saisir la date et l'heure de début de cet événement.
               validate:
                 type: required
             header.event.end:
               type: datetime
-              label: End
-              help: Use the date selector to enter an end date and time for this event.
+              label: Fin
+              help: Utilisez le sélecteur de date pour saisir la date et l'heure de fin de cet événement.
               validate:
                 type: required
             header.event.repeat:
               type: text
-              label: Repeat
-              help: Using MTWRFSU to specify what days of the week this event repeats. For example, MWF.
+              label: Répétition
+              help: Utilisez MTWRFSU pour indiquer les jours de la semaine où l'événement se répète. Par exemple, MWF.
               placeholder: MTWRFSU
             header.event.freq:
               type: select
-              label: Frequency
-              help: How often should this event repeat?
+              label: Fréquence
+              help: À quelle fréquence cet événement doit-il se répéter ?
               default: none
               options:
                 'none': PLUGIN_EVENTS.EVENTS.FREQ_NONE
@@ -65,26 +65,26 @@ form:
                 'yearly': PLUGIN_EVENTS.EVENTS.FREQ_YEARLY
             header.event.until:
               type: datetime
-              label: Until
-              help: How long should this event repeat? (3 months automatically if Repeat or Frequency are set)
+              label: Jusqu'au
+              help: Pendant combien de temps cet événement doit-il se répéter ? (3 mois automatiquement si Répétition ou Fréquence est défini)
             header.event.author-section:
               type: section
-              title: Authors & Organizers
+              title: Auteurs et organisateurs
               underline: true
             header.event.authors:
               type: array
-              label: Enter author name or event category to dispaly as subtitle.
+              label: Saisissez le nom de l'auteur ou la catégorie de l'événement à afficher en sous-titre.
               required: true
               value_only: true
             header.event.organizers:
               type: array
-              label: Organizers
-              placeholder_key: Name
+              label: Organisateurs
+              placeholder_key: Nom
               placeholder_value: URL
               required: true
             header.event.topic:
               type: array
-              label: Topic
+              label: Thème
               required: true
               value_only: true
             header.event.exceptions-section:
@@ -95,7 +95,7 @@ form:
               type: list
               style: vertical
               name: exceptions
-              label: Enter dates this repeating/reoccuring event will not meet.
+              label: Saisissez les dates auxquelles cet événement récurrent n'aura pas lieu.
               fields:
                 .date:
                   type: date
@@ -103,36 +103,36 @@ form:
             header.event.ticket-section:
               type: section
               underline: true
-              title: Ticket
+              title: Billetterie
             header.event.ticket_show:
-              label: Show
+              label: Affichage
               type: select
               options:
-                "hidden": "Hidden"
-                "free": "Free"
-                "price": "Price"
-              title: Show events as free, price or just without information
+                "hidden": "Masqué"
+                "free": "Gratuit"
+                "price": "Payant"
+              title: Afficher l'événement comme gratuit, payant ou sans information
             header.event.ticket_price:
               type: text
-              label: Price
+              label: Tarif
               placeholder: "9.00 $"
             header.event.ticket_link:
               type: text
-              label: Ticket Link
-              help: Paste link to Ticketsystem here
+              label: Lien de billetterie
+              help: Collez ici le lien vers la billetterie
             header.event.location-section:
               type: section
-              title: Location
+              title: Lieu
               underline: true
             header.event.location:
               type: text
-              label: Location
-              help: Where is this event located? If you enter an address it will be geocoded below.
+              label: Lieu
+              help: Où se déroule cet événement ? Si vous saisissez une adresse, elle sera géocodée ci-dessous.
             header.event.coordinates:
               type: text
-              label: Coordinates
+              label: Coordonnées
               placeholder: Latitude, Longitude
-              help: These are automatically generated from the location field.
+              help: Générées automatiquement à partir du champ Lieu.
             header.event.city:
               type: hidden
             header.event.zip:

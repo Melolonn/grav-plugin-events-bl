@@ -20,8 +20,8 @@ require_once __DIR__.'/classes/iCalendarProcessor.php';
 require_once __DIR__.'/classes/calendarProcessor.php';
 require_once __DIR__.'/classes/eventsProcessor.php';
 
-use Grav\Common\Flex\Types\Pages\PageObject;
 use Grav\Common\Page\Header;
+use Grav\Common\Page\Interfaces\PageInterface;
 use Grav\Common\Plugin;
 use Grav\Common\Grav;
 use RocketTheme\Toolbox\Event\Event;
@@ -60,13 +60,13 @@ use Carbon\Carbon;
  * If you use the Admin pluin, the events plugin will automatically geo-decode
  * the location field to a set of coordinates so that you don't have too.
  *
- * PHP version 5.6+
+ * PHP version 8.3+ (Grav 2.0)
  *
  * @package    Events
  * @author     Kaleb Heitzman <kalebheitzman@gmail.com>
  * @copyright  2016 Kaleb Heitzman
  * @license    https://opensource.org/licenses/MIT MIT
- * @version    1.1.0
+ * @version    1.2.0
  * @link       https://github.com/kalebheitzman/grav-plugin-events
  * @since      1.0.0 Initial Release
  */
@@ -107,13 +107,50 @@ class EventsPlugin extends Plugin
 	 * @since  1.0.0 Initial Release
 	 * @return array
 	 */
-	public static function getSubscribedEvents()
+	public static function getSubscribedEvents(): array
 	{
 		return [
 			'onPluginsInitialized' => ['onPluginsInitialized', 0],
 			'onGetPageTemplates'   => ['onGetPageTemplates', 0],
 			'onTwigExtensions'     => ['onTwigExtensions', 0],
+			// Subscribed unconditionally on purpose (Grav 2.0): Admin 2.0 saves
+			// through the API plugin, where isAdmin() is still false while
+			// plugins initialize. The event only fires during admin/API writes.
+			'onAdminSave'          => ['onAdminSave', 0],
 		];
+	}
+
+	/**
+	 * Is the current request an admin or API (Admin 2.0) request?
+	 *
+	 * isAdmin() alone is not enough on Grav 2.0: the API plugin only sets up
+	 * the admin context when it dispatches a route, which is after plugins have
+	 * been initialized. So the request path is checked as well.
+	 *
+	 * @since  1.2.0 Grav 2.0 support
+	 * @return bool
+	 */
+	protected function isBackendRequest(): bool
+	{
+		if ( $this->isAdmin() ) {
+			return true;
+		}
+
+		$path = '/' . trim((string) $this->grav['uri']->path(), '/');
+		$routes = ['/api', (string) $this->config->get('plugins.api.route')];
+
+		foreach ( $routes as $route ) {
+			$route = trim($route, '/');
+			if ( $route === '' ) {
+				continue;
+			}
+			$route = '/' . $route;
+			if ( $path === $route || strpos($path, $route . '/') === 0 ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -130,13 +167,9 @@ class EventsPlugin extends Plugin
 	 */
 	public function onPluginsInitialized()
 	{
-		// Nothing else is needed for admin so close it out
-		if ( $this->isAdmin() ) {
-
-			$this->enable([
-				'onAdminSave' => ['onAdminSave', 0],
-			]);
-
+		// Nothing else is needed for admin/API requests so close it out
+		// (onAdminSave is already subscribed in getSubscribedEvents())
+		if ( $this->isBackendRequest() ) {
 			return;
 		}
 
@@ -295,86 +328,126 @@ class EventsPlugin extends Plugin
 	/**
 	 * Process Event Information
 	 *
-	 * This hook fires a reverse geocoding hook for the location field
-	 * on single events.
+	 * Fires before an object is saved by the classic admin or, on Grav 2.0,
+	 * by the API plugin (Admin 2.0). For single events it runs a reverse
+	 * geocoding for the location field. For the plugin settings it triggers
+	 * the iCalendar import.
 	 *
 	 * @param  Event $event
 	 * @since  1.0.15 Location Field Update
+	 * @since  1.2.0  Grav 2.0 support
 	 * @return void
 	 */
 	public function onAdminSave(Event $event)
 	{
+		$obj = $event['object'] ?? null;
+
+		// pages (PageObject on Flex, Page on legacy, whatever the API hands over)
+		if ( $obj instanceof PageInterface ) {
+			if ( $obj->template() == 'event' ) {
+				$this->geocodeEventPage($obj);
+			}
+			return;
+		}
+
+		// not a page, so it may be the plugin settings
+		$this->handleSettingsSave($obj);
+	}
+
+	/**
+	 * Reverse geocode the location of an event page
+	 *
+	 * @param  PageInterface $page
+	 * @since  1.2.0 Grav 2.0 support (extracted from onAdminSave)
+	 * @return void
+	 */
+	protected function geocodeEventPage(PageInterface $page)
+	{
 		$config = (array) $this->config->get('plugins.events');
 
-		// get the object being saved
-		$obj = $event['object'];
+		/** @var Header $header */
+		$header = $page->header();
+		$ev = $header->event ?? null;
 
-		// check to see if the object is a `PageObject` with template `event`
-		if ( $obj instanceof PageObject && $obj->template() == 'event' )
-		{
-			// get the header
-            /** @var Header $header */
-			$header = $obj->header();
-            $event = $header->event;
+		if ( ! is_array($ev) || empty($ev['location']) || ! empty($ev['coordinates']) ) {
+			return;
+		}
 
-			// check for location information
-			if ( isset( $event['location'] ) && ! isset( $event['coordinates'] ) ) {
-				// leave if geocoding is disabled
-				if ( ! $config['enable_geocoding'] ) {
-					return;
-				}
+		// leave if geocoding is disabled
+		if ( empty($config['enable_geocoding']) ) {
+			return;
+		}
 
-				$location = $event['location'];
+		$location = $ev['location'];
 
-				// build a url
-				$url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($location) . "&key=" . $config['api_key'];
+		// build a url
+		$url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($location) . "&key=" . ($config['api_key'] ?? '');
 
-				// fetch the results
-				$ch = curl_init();
-				curl_setopt($ch, CURLOPT_URL, $url);
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-				$geoloc = json_decode(curl_exec($ch), true);
+		// fetch the results
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+		$response = curl_exec($ch);
+		$geoloc = is_string($response) ? json_decode($response, true) : null;
 
-				foreach ( $geoloc['results'][0]['address_components'] as $address_component ) {
-					if($address_component['types'][0] === 'country' && $address_component['types'][1] === 'political') {
-						$event['country'] = $address_component['long_name'];
-					}
+		// leave if the request failed or nothing was found
+		if ( ! isset($geoloc['results'][0]['geometry']['location']['lat'], $geoloc['results'][0]['geometry']['location']['lng']) ) {
+			return;
+		}
 
-					if($address_component['types'][0] === 'locality' && $address_component['types'][1] === 'political') {
-						$event['city'] = $address_component['long_name'];
-					}
+		foreach ( $geoloc['results'][0]['address_components'] ?? [] as $address_component ) {
+			$type0 = $address_component['types'][0] ?? null;
+			$type1 = $address_component['types'][1] ?? null;
 
-					if($address_component['types'][0] === 'postal_code') {
-						$event['zip'] = $address_component['long_name'];
-					}
-				}
+			if ( $type0 === 'country' && $type1 === 'political' ) {
+				$ev['country'] = $address_component['long_name'];
+			}
 
-				// build the coord string
-				$lat = $geoloc['results'][0]['geometry']['location']['lat'];
-				$lng = $geoloc['results'][0]['geometry']['location']['lng'];
-				$coords = $lat . ", " . $lng;
+			if ( $type0 === 'locality' && $type1 === 'political' ) {
+				$ev['city'] = $address_component['long_name'];
+			}
 
-				// set the header info
-				$event['coordinates'] = $coords;
-                $header->event = $event;
-				$obj->header($header);
+			if ( $type0 === 'postal_code' ) {
+				$ev['zip'] = $address_component['long_name'];
 			}
 		}
-		// check to see if the object is a `PageObject` with template `events`
-		elseif ( $obj instanceof PageObject && $obj->template() == 'events' ) {
+
+		// build the coord string
+		$lat = $geoloc['results'][0]['geometry']['location']['lat'];
+		$lng = $geoloc['results'][0]['geometry']['location']['lng'];
+
+		// set the header info
+		$ev['coordinates'] = $lat . ", " . $lng;
+		$header->event = $ev;
+		$page->header($header);
+	}
+
+	/**
+	 * Handle saving of the plugin settings
+	 *
+	 * Starts the iCalendar import when requested and resets the flag.
+	 *
+	 * @param  mixed $obj The object that is being saved
+	 * @since  1.2.0 Grav 2.0 support (extracted from onAdminSave)
+	 * @return void
+	 */
+	protected function handleSettingsSave($obj)
+	{
+		// onAdminSave also fires for users, other plugins' settings, etc.
+		if ( ! ($obj instanceof \ArrayAccess) || ! isset($obj['icalendar_update']) ) {
+			return;
 		}
-		else // the saved object was not a page, so it was likely the plugin settings
-		{
-			$update_mode = $event['object']["icalendar_update"];
 
-			if($update_mode != 0) {
-				// process iCalendar file(s)
-				$icalendar = new \Events\iCalendarProcessor();
-				$icalendar->process($update_mode-1);
+		$update_mode = (int) $obj['icalendar_update'];
 
-				// reset flag
-				$event['object']["icalendar_update"] = 0;
-			}
+		if ( $update_mode != 0 ) {
+			// process iCalendar file(s)
+			$icalendar = new \Events\iCalendarProcessor();
+			$icalendar->process($update_mode-1);
+
+			// reset flag
+			$obj['icalendar_update'] = 0;
 		}
 	}
 
@@ -387,6 +460,6 @@ class EventsPlugin extends Plugin
 	public function onTwigExtensions()
 	{
 		require_once(__DIR__ . '/twig/DateTranslationExtension.php');
-		$this->grav['twig']->twig->addExtension(new DateTranslationExtension($this->grav));
+		$this->grav['twig']->twig()->addExtension(new DateTranslationExtension());
 	}
 }

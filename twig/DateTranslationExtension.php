@@ -2,6 +2,11 @@
 namespace Grav\Plugin;
 
 use Grav\Common\Grav;
+use Twig\Environment;
+use Twig\Extension\AbstractExtension;
+use Twig\Extension\CoreExtension;
+use Twig\TwigFilter;
+use Twig\TwigFunction;
 
 /**
  * DateTranslationExtension
@@ -30,32 +35,27 @@ use Grav\Common\Grav;
  * Function: Mittwoch, Januar 01, 2020
  * ```
  *
- * PHP version 5.6+
+ * PHP version 8.3+ (Grav 2.0 / Twig 3)
  *
  * @since      1.1.0
+ * @since      1.2.0 Twig 3 support
  */
-class DateTranslationExtension extends \Twig_Extension
+class DateTranslationExtension extends AbstractExtension
 {
     protected $day_char;
     protected $mon_char;
 
-	public function __construct()
+    public function __construct()
     {
-		$grav = Grav::instance();
-		$this->day_char = $grav['config']->get("plugins.events.calendar.day_char");
-		$this->mon_char = $grav['config']->get("plugins.events.calendar.month_char");
+        $grav = Grav::instance();
 
-		if ($this->day_char == 0) { $this->day_char = $grav['config']->get("plugins.events.calendar.day_char.max"); }
-		if ($this->mon_char == 0) { $this->mon_char = $grav['config']->get("plugins.events.calendar.month_char.max"); }
+        // a length of 0 means "show the full name", which mb_substr() expects as null
+        $day_char = (int) $grav['config']->get("plugins.events.calendar.day_char");
+        $mon_char = (int) $grav['config']->get("plugins.events.calendar.month_char");
+
+        $this->day_char = $day_char > 0 ? $day_char : null;
+        $this->mon_char = $mon_char > 0 ? $mon_char : null;
     }
-
-	/**
-	 * Returns this extensions name
-	 */
-	public function getName()
-	{
-		return 'DateTranslationExtension';
-	}
 
 	/**
 	 * Returns the Functions that will be exposed to twig templating
@@ -63,7 +63,7 @@ class DateTranslationExtension extends \Twig_Extension
 	public function getFunctions()
 	{
 		return [
-			new \Twig_SimpleFunction(
+			new TwigFunction(
 				'dateTranslate',
 				[$this, 'dateTranslate'],
 				['needs_environment' => true]
@@ -77,7 +77,7 @@ class DateTranslationExtension extends \Twig_Extension
 	public function getFilters()
 	{
 		return [
-			new \Twig_SimpleFilter(
+			new TwigFilter(
 				'dateTranslate',
 				[$this, 'dateTranslate'],
 				['needs_environment' => true]
@@ -97,17 +97,21 @@ class DateTranslationExtension extends \Twig_Extension
 	 * `ta` with GRAV.DAYS_OF_THE_WEEK and GRAV.MONTHS_OF_THE_YEAR.
 	 *
 	 * @param env The twig environment as required by
-	 * 	`twig_date_format_filter`
+	 * 	the twig date format filter
 	 * @param date The date time-stamp to format
 	 * @param datePattern The date format pattern
 	 *
 	 * @return The translated date string
 	 */
-	public function dateTranslate(\Twig_Environment $env, $date, $datePattern)
+	public function dateTranslate(Environment $env, $date, $datePattern)
 	{
 		$dateFunction = function ($format) use ($env, $date) {
-			// php `twig_date_format_filter` represents twig's `|date`
-			return twig_date_format_filter($env, $date, $format);
+			// represents twig's `|date`
+			// (Twig >= 3.9 has it as a static method, older Twig 3 as a global function)
+			if (method_exists(CoreExtension::class, 'dateFormatFilter')) {
+				return CoreExtension::dateFormatFilter($env, $date, $format);
+			}
+			return \twig_date_format_filter($env, $date, $format);
 		};
 
 		$dateString = '';
